@@ -1,0 +1,42 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # ジョブの名前はメンバーで重複しないように指定
+  deploy-virtual-machine:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      # 登録したシークレットで Azure へログイン
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Azure CLI を使用し ARM テンプレートから仮想マシンを展開
+      - name: Deploy ARM Template
+        uses: azure/CLI@v1
+        with:
+          # {parameter file} には先の手順で作成したパラメーター ファイル名を指定
+          inlineScript: |
+            az deployment group create --resource-group ${{ github.event.inputs.resourceGroupName }} --template-file ./Hands-on-Lab/templates/deploy-vm-as-domain-member.json --parameters {parameter file}
+
+      # ログアウト
+      - name: Azure logout
+        run: |
+          az logout
